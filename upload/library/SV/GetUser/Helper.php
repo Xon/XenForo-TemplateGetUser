@@ -2,8 +2,34 @@
 
 class SV_GetUser_Helper
 {
-    static $userModel = null;
-    static $userCache = null;
+    public static function GetUser($userId)
+    {
+        if (!is_numeric($userId) || intval($userId) ===  0)
+        {
+            XenForo_Error::debug("user_id should be an integer:".var_export($userId,true));
+        }
+        static $userModel = null;
+        static $userCache = null;
+        if ($userModel === null)
+        {
+            $userModel = XenForo_Model::create('XenForo_Model_User');
+        }
+        if (isset($userCache[$userId]))
+        {
+            return $userCache[$userId];
+        }
+        else
+        {
+            $user = $userModel->getUserById($userId);
+            if (empty($user))
+            {
+                $user = array('user_id'=> 0, 'username'=>'Guest');
+            }
+            $userCache[$userId] = $user ;
+            
+            return $user;
+        }
+    }
 
     public static function GetUserAvatar($content, $params, XenForo_Template_Abstract $template)
     {
@@ -18,23 +44,7 @@ class SV_GetUser_Helper
             }
             else
             {
-                if (self::$userModel === null)
-                {
-                    self::$userModel = XenForo_Model::create('XenForo_Model_User');
-                }
-                if (isset(self::$userCache[$userId]))
-                {
-                    $user = self::$userCache[$userId];
-                }
-                else
-                {
-                    $user = self::$userModel->getUserById($userId);
-                    if (empty($user))
-                    {
-                        $user = array('user_id'=> 0, 'username'=>'Guest');
-                    }
-                    self::$userCache[$userId] = $user ;
-                }
+                $user = self::GetUser($userId);
             }
         }
         $params['user'] = $user;
@@ -45,23 +55,7 @@ class SV_GetUser_Helper
     {
         $user = array();
         $userId = empty($params) ? null : $params;
-        if (self::$userModel === null)
-        {
-            self::$userModel = XenForo_Model::create('XenForo_Model_User');
-        }
-        if (isset(self::$userCache[$userId]))
-        {
-            $user = self::$userCache[$userId];
-        }
-        else
-        {
-            $user = self::$userModel->getUserById($userId);
-            if (empty($user))
-            {
-                $user = array('user_id'=> 0, 'username'=>'Guest');
-            }
-            self::$userCache[$userId] = $user ;
-        }
+        $user = self::GetUser($userId);
         return XenForo_Template_Helper_Core::callHelper('usernamehtml', array($user, '', false, array()));
     }
 }
